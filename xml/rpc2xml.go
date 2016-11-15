@@ -32,11 +32,12 @@ func rpcResponse2XML(rpc interface{}) (string, error) {
 
 func rpcParams2XML(rpc interface{}) (string, error) {
 	var err error
+	fields := reflect.ValueOf(rpc).NumField()
 	buffer := "<params>"
-	for i := 0; i < reflect.ValueOf(rpc).Elem().NumField(); i++ {
+	for i := 0; i < fields; i++ {
 		var xml string
 		buffer += "<param>"
-		xml, err = rpc2XML(reflect.ValueOf(rpc).Elem().Field(i).Interface())
+		xml, err = rpc2XML(reflect.ValueOf(rpc).Field(i).Interface())
 		buffer += xml
 		buffer += "</param>"
 	}
@@ -55,6 +56,8 @@ func rpc2XML(value interface{}) (string, error) {
 		out += string2XML(value.(string))
 	case reflect.Bool:
 		out += bool2XML(value.(bool))
+	case reflect.Map:
+		out += map2XML(value.(map[string]string))
 	case reflect.Struct:
 		if reflect.TypeOf(value).String() != "time.Time" {
 			out += struct2XML(value)
@@ -93,6 +96,19 @@ func string2XML(value string) string {
 	value = strings.Replace(value, "<", "&lt;", -1)
 	value = strings.Replace(value, ">", "&gt;", -1)
 	return fmt.Sprintf("<string>%s</string>", value)
+}
+
+func map2XML(members map[string]string) (out string) {
+	out += "<struct>"
+	for k, v := range members {
+		out += "<member>"
+		out += fmt.Sprintf("<name>%s</name>", k)
+		out += fmt.Sprintf("<value><string>%s</string></value>", v)
+		out += "</member>"
+	}
+
+	out += "</struct>"
+	return out
 }
 
 func struct2XML(value interface{}) (out string) {
